@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geometry Dash</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #000, #1a1a2e);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border: 3px solid #00d4ff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 400px;
+            display: block;
+        }
+        .ui {
+            background: #1a1a2e;
+            padding: 15px;
+            text-align: center;
+            border-top: 2px solid #00d4ff;
+        }
+        .score {
+            color: #00d4ff;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-shadow: 0 0 10px #4f46e5;
+        }
+        .message {
+            color: #FFD700;
+            margin-top: 10px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="ui">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="message" id="message">Press SPACE to start!</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let gameRunning = false;
+        let score = 0;
+        let speed = 6;
+
+        const player = {
+            x: 50,
+            y: canvas.height - 80,
+            width: 30,
+            height: 30,
+            velocityY: 0,
+            jumping: false,
+            color: '#00d4ff'
+        };
+
+        let obstacles = [];
+        let scrollX = 0;
+
+        function playSound(freq, duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + duration);
+        }
+
+        function jump() {
+            if (!player.jumping) {
+                player.velocityY = -15;
+                player.jumping = true;
+                playSound(800, 0.15);
+            }
+        }
+
+        function generateObstacle() {
+            if (Math.random() < 0.02) {
+                obstacles.push({
+                    x: canvas.width,
+                    y: canvas.height - 50,
+                    width: 30,
+                    height: 50,
+                    color: '#FF6B6B'
+                });
+            }
+        }
+
+        function update() {
+            if (!gameRunning) return;
+
+            // Player gravity
+            player.velocityY += 0.6;
+            player.y += player.velocityY;
+
+            if (player.y + player.height >= canvas.height - 20) {
+                player.y = canvas.height - 20 - player.height;
+                player.jumping = false;
+                player.velocityY = 0;
+            }
+
+            // Generate obstacles
+            generateObstacle();
+
+            // Move obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= speed;
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    score += 10;
+                    playSound(1000, 0.1);
+                    speed += 0.5;
+                }
+
+                // Collision
+                if (checkCollision(player, obstacles[i])) {
+                    gameRunning = false;
+                    playSound(200, 0.5);
+                    document.getElementById('message').textContent = 'Game Over! Score: ' + score + ' - Press SPACE to restart';
+                }
+            }
+
+            document.getElementById('score').textContent = score;
+        }
+
+        function checkCollision(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground
+            ctx.fillStyle = '#00d4ff';
+            ctx.fillRect(0, canvas.height - 20, canvas.width, 20);
+
+            // Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            // Obstacles
+            for (let obstacle of obstacles) {
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                if (!gameRunning) {
+                    gameRunning = true;
+                    score = 0;
+                    speed = 6;
+                    obstacles = [];
+                    player.y = canvas.height - 80;
+                    player.velocityY = 0;
+                    player.jumping = false;
+                    document.getElementById('message').textContent = 'Playing...';
+                    playSound(600, 0.1);
+                } else {
+                    jump();
+                }
+            }
+        });
+
+        canvas.addEventListener('click', jump);
+
+        gameLoop();
+    </script>
+</body>
+</html>
