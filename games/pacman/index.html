@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maze Chase</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            border: 3px solid #00d4ff;
+        }
+        .ui {
+            background: #000;
+            padding: 15px;
+            text-align: center;
+            border-top: 3px solid #00d4ff;
+            color: #00d4ff;
+        }
+        .score {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .controls {
+            color: #a1a1aa;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="ui">
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="controls">Use Arrow Keys to move and collect items!</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let score = 0;
+        const tileSize = 40;
+
+        const player = {
+            x: 1,
+            y: 1,
+            size: tileSize - 4,
+            color: '#00d4ff'
+        };
+
+        let maze = [
+            [1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,1,0,0,0,0,1],
+            [1,0,1,0,1,0,1,1,0,1],
+            [1,0,1,0,0,0,1,0,0,1],
+            [1,0,1,1,1,1,1,0,1,1],
+            [1,0,0,0,0,0,0,0,0,1],
+            [1,1,1,0,1,1,1,1,0,1],
+            [1,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,1,1,1,1],
+            [1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        let items = [];
+        let ghosts = [];
+
+        function playSound(freq, duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + duration);
+        }
+
+        function initItems() {
+            items = [];
+            for (let i = 0; i < 5; i++) {
+                let x, y;
+                do {
+                    x = Math.floor(Math.random() * 10);
+                    y = Math.floor(Math.random() * 10);
+                } while (maze[y][x] === 1 || (x === player.x && y === player.y));
+                items.push({ x, y });
+            }
+        }
+
+        function initGhosts() {
+            ghosts = [
+                { x: 8, y: 8, color: '#FF6B6B' },
+                { x: 8, y: 1, color: '#FFB6C1' }
+            ];
+        }
+
+        const keys = {};
+        document.addEventListener('keydown', (e) => { keys[e.key] = true; });
+        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function update() {
+            let newX = player.x;
+            let newY = player.y;
+
+            if (keys['ArrowUp']) newY = Math.max(0, newY - 1);
+            if (keys['ArrowDown']) newY = Math.min(9, newY + 1);
+            if (keys['ArrowLeft']) newX = Math.max(0, newX - 1);
+            if (keys['ArrowRight']) newX = Math.min(9, newX + 1);
+
+            if (maze[newY][newX] === 0) {
+                player.x = newX;
+                player.y = newY;
+                playSound(600, 0.05);
+            }
+
+            // Check items
+            items = items.filter(item => {
+                if (item.x === player.x && item.y === player.y) {
+                    score += 10;
+                    playSound(1000, 0.1);
+                    document.getElementById('score').textContent = score;
+                    return false;
+                }
+                return true;
+            });
+
+            if (items.length === 0) {
+                initItems();
+                playSound(1200, 0.3);
+            }
+
+            // Move ghosts
+            ghosts.forEach(ghost => {
+                const directions = [];
+                if (maze[ghost.y - 1]?.[ghost.x] === 0) directions.push({ x: ghost.x, y: ghost.y - 1 });
+                if (maze[ghost.y + 1]?.[ghost.x] === 0) directions.push({ x: ghost.x, y: ghost.y + 1 });
+                if (maze[ghost.y][ghost.x - 1] === 0) directions.push({ x: ghost.x - 1, y: ghost.y });
+                if (maze[ghost.y][ghost.x + 1] === 0) directions.push({ x: ghost.x + 1, y: ghost.y });
+                
+                if (directions.length > 0) {
+                    const newPos = directions[Math.floor(Math.random() * directions.length)];
+                    ghost.x = newPos.x;
+                    ghost.y = newPos.y;
+                }
+
+                if (ghost.x === player.x && ghost.y === player.y) {
+                    playSound(200, 0.5);
+                    alert('Caught! Score: ' + score);
+                    score = 0;
+                    player.x = 1;
+                    player.y = 1;
+                    initItems();
+                    initGhosts();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Maze
+            for (let y = 0; y < 10; y++) {
+                for (let x = 0; x < 10; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillStyle = '#4f46e5';
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+
+            // Items
+            ctx.fillStyle = '#FFD700';
+            items.forEach(item => {
+                ctx.beginPath();
+                ctx.arc(item.x * tileSize + tileSize / 2, item.y * tileSize + tileSize / 2, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Ghosts
+            ghosts.forEach(ghost => {
+                ctx.fillStyle = ghost.color;
+                ctx.fillRect(ghost.x * tileSize + 4, ghost.y * tileSize + 4, tileSize - 8, tileSize - 8);
+            });
+
+            // Player
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x * tileSize + 2, player.y * tileSize + 2, player.size, player.size);
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        initItems();
+        initGhosts();
+        gameLoop();
+    </script>
+</body>
+</html>
