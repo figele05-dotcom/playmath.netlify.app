@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2v2.io</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            border: 3px solid #00d4ff;
+        }
+        .ui {
+            background: #000;
+            padding: 15px;
+            text-align: center;
+            border-top: 3px solid #00d4ff;
+            color: #00d4ff;
+        }
+        .scores {
+            display: flex;
+            justify-content: space-around;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .controls {
+            color: #a1a1aa;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div class="ui">
+            <div class="scores">
+                <div>Team Red: <span id="scoreRed">0</span></div>
+                <div>Team Blue: <span id="scoreBlue">0</span></div>
+            </div>
+            <div class="controls">WASD or Arrow Keys to move, SPACE to attack</div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let scoreRed = 0, scoreBlue = 0;
+        const keys = {};
+
+        const players = [
+            { x: 100, y: 100, size: 25, color: '#FF6B6B', team: 'red', vx: 0, vy: 0, hp: 100 },
+            { x: 150, y: 150, size: 25, color: '#FF6B6B', team: 'red', vx: 0, vy: 0, hp: 100 },
+            { x: 600, y: 400, size: 25, color: '#4169E1', team: 'blue', vx: 0, vy: 0, hp: 100 },
+            { x: 650, y: 450, size: 25, color: '#4169E1', team: 'blue', vx: 0, vy: 0, hp: 100 }
+        ];
+
+        let projectiles = [];
+
+        function playSound(freq, duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + duration);
+        }
+
+        document.addEventListener('keydown', (e) => { keys[e.key] = true; });
+        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function update() {
+            // Red team (WASD)
+            if (keys['w'] || keys['W']) players[0].y -= 4;
+            if (keys['s'] || keys['S']) players[0].y += 4;
+            if (keys['a'] || keys['A']) players[0].x -= 4;
+            if (keys['d'] || keys['D']) players[0].x += 4;
+
+            // Blue team (Arrow Keys)
+            if (keys['ArrowUp']) players[2].y -= 4;
+            if (keys['ArrowDown']) players[2].y += 4;
+            if (keys['ArrowLeft']) players[2].x -= 4;
+            if (keys['ArrowRight']) players[2].x += 4;
+
+            // Shooting
+            if (keys[' ']) {
+                projectiles.push({
+                    x: players[0].x,
+                    y: players[0].y,
+                    vx: 6,
+                    vy: 0,
+                    team: 'red',
+                    color: '#FF6B6B'
+                });
+                playSound(600, 0.1);
+                delete keys[' '];
+            }
+
+            // Keep players in bounds
+            players.forEach(p => {
+                p.x = Math.max(0, Math.min(canvas.width - p.size, p.x));
+                p.y = Math.max(0, Math.min(canvas.height - p.size, p.y));
+            });
+
+            // Move projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                projectiles[i].x += projectiles[i].vx;
+                projectiles[i].y += projectiles[i].vy;
+
+                if (projectiles[i].x > canvas.width || projectiles[i].x < 0) {
+                    projectiles.splice(i, 1);
+                    continue;
+                }
+
+                // Check collisions
+                for (let j = 0; j < players.length; j++) {
+                    if (players[j].team !== projectiles[i].team) {
+                        if (Math.sqrt((projectiles[i].x - players[j].x) ** 2 + (projectiles[i].y - players[j].y) ** 2) < 40) {
+                            players[j].hp -= 20;
+                            projectiles.splice(i, 1);
+                            playSound(1000, 0.2);
+                            
+                            if (players[j].hp <= 0) {
+                                if (projectiles[i].team === 'red') scoreRed++;
+                                else scoreBlue++;
+                                players[j].hp = 100;
+                                players[j].x = projectiles[i].team === 'red' ? 100 : 600;
+                                players[j].y = projectiles[i].team === 'red' ? 100 : 400;
+                                playSound(1200, 0.3);
+                            }
+                        }
+                    }
+                }
+            }
+
+            document.getElementById('scoreRed').textContent = scoreRed;
+            document.getElementById('scoreBlue').textContent = scoreBlue;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Center line
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(canvas.width / 2, 0);
+            ctx.lineTo(canvas.width / 2, canvas.height);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Players
+            players.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // HP bar
+                ctx.fillStyle = p.hp > 50 ? '#00FF00' : '#FF0000';
+                ctx.fillRect(p.x - p.size, p.y - p.size - 10, (p.size * 2 * p.hp) / 100, 5);
+            });
+
+            // Projectiles
+            projectiles.forEach(proj => {
+                ctx.fillStyle = proj.color;
+                ctx.beginPath();
+                ctx.arc(proj.x, proj.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
