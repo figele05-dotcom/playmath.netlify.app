@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brick Breaker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            border: 3px solid #00d4ff;
+        }
+        .ui {
+            background: #000;
+            padding: 15px;
+            text-align: center;
+            border-top: 3px solid #00d4ff;
+            color: #00d4ff;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div class="ui">Score: <span id="score">0</span> | Lives: <span id="lives">3</span></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let score = 0;
+        let lives = 3;
+        let gameRunning = true;
+
+        const paddle = {
+            x: canvas.width / 2 - 40,
+            y: canvas.height - 20,
+            width: 80,
+            height: 12,
+            dx: 0,
+            color: '#00d4ff'
+        };
+
+        const ball = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            radius: 8,
+            dx: 4,
+            dy: -4,
+            color: '#FFD700'
+        };
+
+        let bricks = [];
+        let ballInPlay = false;
+
+        function playSound(freq, duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + duration);
+        }
+
+        function initBricks() {
+            bricks = [];
+            const colors = ['#FF6B6B', '#FFB6C1', '#FFD700', '#00FF00', '#00d4ff'];
+            for (let row = 0; row < 5; row++) {
+                for (let col = 0; col < 10; col++) {
+                    bricks.push({
+                        x: col * 60,
+                        y: 50 + row * 25,
+                        width: 58,
+                        height: 22,
+                        color: colors[row],
+                        active: true
+                    });
+                }
+            }
+        }
+
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            keys[e.key] = true;
+            if (e.key === ' ' && !ballInPlay) {
+                ballInPlay = true;
+                ball.x = paddle.x + paddle.width / 2;
+                ball.y = paddle.y - 10;
+                ball.dx = 4;
+                ball.dy = -4;
+            }
+        });
+        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function update() {
+            if (!gameRunning) return;
+
+            // Paddle movement
+            if (keys['ArrowLeft']) paddle.x = Math.max(0, paddle.x - 6);
+            if (keys['ArrowRight']) paddle.x = Math.min(canvas.width - paddle.width, paddle.x + 6);
+
+            if (!ballInPlay) {
+                ball.x = paddle.x + paddle.width / 2;
+                ball.y = paddle.y - 10;
+                return;
+            }
+
+            // Ball movement
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            // Ball collision with walls
+            if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+                ball.dx = -ball.dx;
+                playSound(400, 0.05);
+            }
+            if (ball.y - ball.radius < 0) {
+                ball.dy = -ball.dy;
+                playSound(400, 0.05);
+            }
+
+            // Ball collision with paddle
+            if (ball.y + ball.radius > paddle.y &&
+                ball.x > paddle.x && ball.x < paddle.x + paddle.width &&
+                ball.dy > 0) {
+                ball.dy = -Math.abs(ball.dy);
+                ball.dx += paddle.dx * 0.3;
+                playSound(800, 0.1);
+            }
+
+            // Ball collision with bricks
+            for (let brick of bricks) {
+                if (brick.active &&
+                    ball.x > brick.x && ball.x < brick.x + brick.width &&
+                    ball.y > brick.y && ball.y < brick.y + brick.height) {
+                    
+                    brick.active = false;
+                    ball.dy = -ball.dy;
+                    score += 10;
+                    playSound(1000, 0.1);
+                    document.getElementById('score').textContent = score;
+                }
+            }
+
+            // Ball falls below paddle
+            if (ball.y > canvas.height) {
+                lives--;
+                ballInPlay = false;
+                document.getElementById('lives').textContent = lives;
+                playSound(200, 0.3);
+
+                if (lives <= 0) {
+                    gameRunning = false;
+                    alert('Game Over! Score: ' + score);
+                }
+            }
+
+            // Check if all bricks destroyed
+            if (bricks.every(brick => !brick.active)) {
+                initBricks();
+                playSound(1200, 0.3);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Paddle
+            ctx.fillStyle = paddle.color;
+            ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+
+            // Ball
+            ctx.fillStyle = ball.color;
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Bricks
+            for (let brick of bricks) {
+                if (brick.active) {
+                    ctx.fillStyle = brick.color;
+                    ctx.fillRect(brick.x, brick.y, brick.width, brick.height);
+                }
+            }
+
+            // Start message
+            if (!ballInPlay && gameRunning) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Press SPACE to start', canvas.width / 2, canvas.height / 2);
+            }
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        initBricks();
+        gameLoop();
+    </script>
+</body>
+</html>
