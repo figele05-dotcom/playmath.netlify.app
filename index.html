@@ -9,105 +9,540 @@
     
     <style>
         * { box-sizing: border-box; }
+        
         body {
-            background-color: #0f0f12;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             color: #ffffff;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
-        h1 { margin-bottom: 5px; color: #4f46e5; }
-        p.subtitle { margin-top: 0; color: #a1a1aa; font-size: 14px; margin-bottom: 25px; }
-        
-        .search-container { width: 100%; max-width: 600px; margin-bottom: 30px; }
+
+        /* Menu Screen */
+        #menuScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        #menuScreen.hidden {
+            display: none;
+        }
+
+        .menu-title {
+            font-size: 4em;
+            font-weight: bold;
+            color: #00d4ff;
+            text-shadow: 0 0 20px #00d4ff, 0 0 40px #4f46e5;
+            margin-bottom: 50px;
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px #00d4ff, 0 0 40px #4f46e5; }
+            50% { text-shadow: 0 0 30px #00d4ff, 0 0 50px #4f46e5, 0 0 70px #00d4ff; }
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .menu-btn {
+            padding: 18px 60px;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: 3px solid #00d4ff;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .menu-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 40px rgba(79, 70, 229, 1), 0 0 60px #00d4ff;
+            background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        }
+
+        .menu-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Game Screen */
+        #gameScreen {
+            width: 100%;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #gameScreen.active {
+            display: flex;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 30px;
+        }
+
+        .back-btn {
+            padding: 12px 25px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+
+        .back-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(231, 76, 60, 1);
+        }
+
+        h1 {
+            margin: 0;
+            color: #00d4ff;
+            text-shadow: 0 0 15px #4f46e5;
+            font-size: 2.5em;
+        }
+
+        p.subtitle {
+            margin: 5px 0 20px 0;
+            color: #a1a1aa;
+            font-size: 1em;
+        }
+
+        .search-container {
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 30px;
+        }
+
         .search-bar {
             width: 100%;
-            padding: 14px 20px;
-            font-size: 16px;
-            background-color: #1e1e24;
-            border: 2px solid #2e2e38;
+            padding: 15px 20px;
+            font-size: 1em;
+            background: linear-gradient(135deg, #1e1e24 0%, #2a2a35 100%);
+            border: 3px solid #4f46e5;
             border-radius: 30px;
             color: white;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(79, 70, 229, 0.3);
         }
-        .search-bar:focus { border-color: #4f46e5; }
+
+        .search-bar:focus {
+            border-color: #00d4ff;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+        }
+
+        .search-bar::placeholder {
+            color: #666;
+        }
 
         .game-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 25px;
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
         }
+
         .game-card {
-            background-color: #1e1e24;
-            border-radius: 16px;
+            background: linear-gradient(135deg, #1e1e24 0%, #2a2a35 100%);
+            border-radius: 18px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-align: center;
+            transition: all 0.3s;
+            border: 3px solid #4f46e5;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+            position: relative;
         }
+
         .game-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+            transform: translateY(-12px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(79, 70, 229, 0.8), 0 0 30px #00d4ff;
+            border-color: #00d4ff;
         }
+
         .game-card img {
             width: 100%;
-            height: 130px;
+            height: 200px;
             object-fit: cover;
             background-color: #2e2e38;
         }
+
         .game-card h3 {
-            margin: 10px 0;
-            font-size: 15px;
-            padding: 0 10px;
+            margin: 15px 0;
+            font-size: 1.3em;
+            padding: 0 15px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: #00d4ff;
+            text-shadow: 0 0 10px #4f46e5;
+        }
+
+        .game-card p {
+            margin: 0 15px 15px 15px;
+            font-size: 0.85em;
+            color: #a1a1aa;
+        }
+
+        /* Settings Screen */
+        #settingsScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        #settingsScreen.active {
+            display: flex;
+        }
+
+        .settings-container {
+            background: linear-gradient(135deg, #2a2a35 0%, #1e1e24 100%);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #4f46e5;
+            max-width: 500px;
+            box-shadow: 0 0 40px rgba(79, 70, 229, 0.6);
+        }
+
+        .settings-container h2 {
+            color: #00d4ff;
+            text-shadow: 0 0 15px #4f46e5;
+            margin-top: 0;
+            font-size: 2.5em;
+        }
+
+        .setting-item {
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .setting-label {
+            color: #a1a1aa;
+            font-size: 1.1em;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background-color: #444;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border: 2px solid #4f46e5;
+        }
+
+        .toggle-switch.active {
+            background-color: #4f46e5;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            background-color: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            left: 34px;
+        }
+
+        .close-settings {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.6);
+        }
+
+        .close-settings:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(79, 70, 229, 1);
+        }
+
+        /* Credits Screen */
+        #creditsScreen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 999;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        }
+
+        #creditsScreen.active {
+            display: flex;
+        }
+
+        .credits-container {
+            background: linear-gradient(135deg, #2a2a35 0%, #1e1e24 100%);
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid #4f46e5;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(79, 70, 229, 0.6);
+        }
+
+        .credits-container h2 {
+            color: #00d4ff;
+            text-shadow: 0 0 15px #4f46e5;
+            margin-top: 0;
+            font-size: 2.5em;
+        }
+
+        .credits-content {
+            color: #a1a1aa;
+            font-size: 1.2em;
+            line-height: 1.8;
+        }
+
+        .credits-content strong {
+            color: #00d4ff;
+            text-shadow: 0 0 10px #4f46e5;
+        }
+
+        .close-credits {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 0 15px rgba(79, 70, 229, 0.6);
+        }
+
+        .close-credits:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(79, 70, 229, 1);
         }
     </style>
 </head>
 <body>
 
-    <h1>Dashboard</h1>
-    <p class="subtitle">Select an application to launch</p>
-
-    <div class="search-container">
-        <input type="text" id="searchBar" class="search-bar" placeholder="Search available items..." onkeyup="filterGames()">
+    <!-- Menu Screen -->
+    <div id="menuScreen">
+        <h2 class="menu-title">🎮 GAME HUB 🎮</h2>
+        <div class="menu-buttons">
+            <button class="menu-btn" onclick="startGame()">Start</button>
+            <button class="menu-btn" onclick="showCredits()">Credits</button>
+            <button class="menu-btn" onclick="showSettings()">Settings</button>
+        </div>
     </div>
 
-    <div class="game-grid" id="gameGrid">
-        <!-- Game 1: Space Shooter -->
-        <div class="game-card" onclick="launchGame('games/space-shooter/index.html')">
-            <img src="https://images.unsplash.com/photo-1550355291-bbee04a92027?w=300&h=200&fit=crop" alt="Space Shooter">
-            <h3>Space Shooter</h3>
+    <!-- Credits Screen -->
+    <div id="creditsScreen">
+        <div class="credits-container">
+            <h2>Credits</h2>
+            <div class="credits-content">
+                <p><strong>Developer & Creator</strong></p>
+                <p>John</p>
+                <p style="margin-top: 30px; font-size: 0.9em; color: #888;">Thanks for playing!</p>
+            </div>
+            <button class="close-credits" onclick="closeCredits()">Back to Menu</button>
         </div>
-        
-        <!-- Game 2: Retro Snake -->
-        <div class="game-card" onclick="launchGame('games/snake/index.html')">
-            <img src="https://images.unsplash.com/photo-1535869422341-7c3cff5d3f9f?w=300&h=200&fit=crop" alt="Retro Snake">
-            <h3>Retro Snake</h3>
+    </div>
+
+    <!-- Settings Screen -->
+    <div id="settingsScreen">
+        <div class="settings-container">
+            <h2>Settings</h2>
+            
+            <div class="setting-item">
+                <span class="setting-label">Sound Effects</span>
+                <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
+            </div>
+
+            <div class="setting-item">
+                <span class="setting-label">Music</span>
+                <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
+            </div>
+
+            <div class="setting-item">
+                <span class="setting-label">Full Screen</span>
+                <div class="toggle-switch" onclick="toggleSetting(this)"></div>
+            </div>
+
+            <div class="setting-item">
+                <span class="setting-label">Difficulty: Hard</span>
+                <div style="color: #00d4ff;">⚡</div>
+            </div>
+
+            <button class="close-settings" onclick="closeSettings()">Back to Menu</button>
+        </div>
+    </div>
+
+    <!-- Game Screen -->
+    <div id="gameScreen">
+        <div class="header">
+            <button class="back-btn" onclick="backToMenu()">← Back</button>
+            <h1>Dashboard</h1>
+            <div style="width: 80px;"></div>
+        </div>
+
+        <p class="subtitle">Select a game to play</p>
+
+        <div class="search-container">
+            <input type="text" id="searchBar" class="search-bar" placeholder="Search games..." onkeyup="filterGames()">
+        </div>
+
+        <div class="game-grid" id="gameGrid">
+            <!-- Game 1: Space Shooter -->
+            <div class="game-card" onclick="launchGame('games/space-shooter/index.html')">
+                <img src="https://images.unsplash.com/photo-1614730321146-b6fa6a46bcb4?w=400&h=300&fit=crop" alt="Space Shooter">
+                <h3>🚀 Space Shooter</h3>
+                <p>Destroy enemies and survive waves!</p>
+            </div>
+            
+            <!-- Game 2: Retro Snake -->
+            <div class="game-card" onclick="launchGame('games/snake/index.html')">
+                <img src="https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400&h=300&fit=crop" alt="Retro Snake">
+                <h3>🐍 Retro Snake</h3>
+                <p>Classic snake game with a twist!</p>
+            </div>
+
+            <!-- Game 3: Flappy Bird Clone -->
+            <div class="game-card" onclick="launchGame('games/flappy/index.html')">
+                <img src="https://images.unsplash.com/photo-1552291026-8ab44bb58199?w=400&h=300&fit=crop" alt="Flappy Bird">
+                <h3>🐦 Flappy Sky</h3>
+                <p>Tap to fly and avoid obstacles!</p>
+            </div>
+
+            <!-- Game 4: Memory Match -->
+            <div class="game-card" onclick="launchGame('games/memory/index.html')">
+                <img src="https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=400&h=300&fit=crop" alt="Memory Match">
+                <h3>🧠 Memory Match</h3>
+                <p>Test your memory and find pairs!</p>
+            </div>
+
+            <!-- Game 5: Pac-Man Style -->
+            <div class="game-card" onclick="launchGame('games/pacman/index.html')">
+                <img src="https://images.unsplash.com/photo-1538481143235-5d3d70e41511?w=400&h=300&fit=crop" alt="Pac-Man">
+                <h3>👾 Maze Chase</h3>
+                <p>Navigate the maze and collect items!</p>
+            </div>
+
+            <!-- Game 6: Breakout/Brick Breaker -->
+            <div class="game-card" onclick="launchGame('games/breakout/index.html')">
+                <img src="https://images.unsplash.com/photo-1535869422341-7c3cff5d3f9f?w=400&h=300&fit=crop" alt="Breakout">
+                <h3>⚡ Brick Breaker</h3>
+                <p>Smash bricks and rack up points!</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // 1. Tab Cloaker: Instantly changes tab details if you click away to another tab
+        // Tab Cloaker
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
                 document.title = "Google Classroom";
-                document.querySelector("link[rel*='icon']").href = "https://gstatic.com";
             } else {
                 document.title = "Google Drive - My Drive";
-                document.querySelector("link[rel*='icon']").href = "https://gstatic.com";
             }
         });
 
-        // 2. Search Filter Logic
+        // Menu Navigation
+        function startGame() {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('gameScreen').classList.add('active');
+        }
+
+        function backToMenu() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('menuScreen').classList.remove('hidden');
+            document.getElementById('settingsScreen').classList.remove('active');
+            document.getElementById('creditsScreen').classList.remove('active');
+        }
+
+        function showCredits() {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('creditsScreen').classList.add('active');
+        }
+
+        function closeCredits() {
+            document.getElementById('creditsScreen').classList.remove('active');
+            document.getElementById('menuScreen').classList.remove('hidden');
+        }
+
+        function showSettings() {
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('settingsScreen').classList.add('active');
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsScreen').classList.remove('active');
+            document.getElementById('menuScreen').classList.remove('hidden');
+        }
+
+        function toggleSetting(element) {
+            element.classList.toggle('active');
+        }
+
+        // Search Filter Logic
         function filterGames() {
             let input = document.getElementById('searchBar').value.toLowerCase();
             let cards = document.getElementsByClassName('game-card');
@@ -122,7 +557,7 @@
             }
         }
 
-        // 3. Clean Launch Option (Opens game in a blank clean window frame)
+        // Launch Game in iframe
         function launchGame(path) {
             let win = window.open();
             win.document.body.style.margin = '0';
