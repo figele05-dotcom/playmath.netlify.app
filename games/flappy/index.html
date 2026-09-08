@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Sky</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F6FF 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            border: 3px solid #333;
+        }
+        .ui {
+            background: #333;
+            padding: 15px;
+            text-align: center;
+            color: #FFD700;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="ui">Score: <span id="score">0</span> | Click to fly</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let score = 0;
+        let gameRunning = true;
+
+        const bird = {
+            x: 60,
+            y: canvas.height / 2,
+            radius: 15,
+            vy: 0,
+            color: '#FFD700'
+        };
+
+        let pipes = [];
+        let pipeTimer = 0;
+
+        function playSound(freq, duration) {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            osc.connect(gain);
+            gain.connect(audioContext.destination);
+            osc.frequency.value = freq;
+            osc.type = 'sine';
+            gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            osc.start(audioContext.currentTime);
+            osc.stop(audioContext.currentTime + duration);
+        }
+
+        function jump() {
+            bird.vy = -8;
+            playSound(800, 0.1);
+        }
+
+        document.addEventListener('click', jump);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        function update() {
+            if (!gameRunning) return;
+
+            // Bird physics
+            bird.vy += 0.4;
+            bird.y += bird.vy;
+
+            // Check boundaries
+            if (bird.y - bird.radius < 0 || bird.y + bird.radius > canvas.height) {
+                gameRunning = false;
+                playSound(200, 0.5);
+            }
+
+            // Generate pipes
+            pipeTimer++;
+            if (pipeTimer > 90) {
+                const gap = 120;
+                const minHeight = 50;
+                const maxHeight = canvas.height - gap - 50;
+                const pipeHeight = Math.random() * (maxHeight - minHeight) + minHeight;
+                
+                pipes.push({
+                    x: canvas.width,
+                    topHeight: pipeHeight,
+                    bottomY: pipeHeight + gap,
+                    width: 60,
+                    scored: false
+                });
+                pipeTimer = 0;
+            }
+
+            // Move and check pipes
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                pipes[i].x -= 5;
+
+                if (pipes[i].x + pipes[i].width < bird.x && !pipes[i].scored) {
+                    score++;
+                    pipes[i].scored = true;
+                    playSound(1200, 0.15);
+                    document.getElementById('score').textContent = score;
+                }
+
+                // Collision detection
+                if (bird.x + bird.radius > pipes[i].x && bird.x - bird.radius < pipes[i].x + pipes[i].width) {
+                    if (bird.y - bird.radius < pipes[i].topHeight || bird.y + bird.radius > pipes[i].bottomY) {
+                        gameRunning = false;
+                        playSound(200, 0.5);
+                    }
+                }
+
+                if (pipes[i].x < -pipes[i].width) pipes.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            // Sky
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Ground
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+
+            // Bird
+            ctx.fillStyle = bird.color;
+            ctx.beginPath();
+            ctx.arc(bird.x, bird.y, bird.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Pipes
+            ctx.fillStyle = '#228B22';
+            pipes.forEach(pipe => {
+                ctx.fillRect(pipe.x, 0, pipe.width, pipe.topHeight);
+                ctx.fillRect(pipe.x, pipe.bottomY, pipe.width, canvas.height - pipe.bottomY);
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            if (!gameRunning && pipes.length === 0) {
+                ctx.fillStyle = 'rgba(0,0,0,0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 30px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                ctx.fillText('Score: ' + score, canvas.width / 2, canvas.height / 2 + 40);
+                return;
+            }
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
