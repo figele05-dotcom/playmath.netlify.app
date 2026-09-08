@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crossy Roads</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 600px;
+            display: block;
+            border: 3px solid #00d4ff;
+        }
+        .ui {
+            background: #000;
+            padding: 15px;
+            text-align: center;
+            border-top: 3px solid #00d4ff;
+            color: #00d4ff;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="ui">Score: <span id="score">0</span> | Use Arrow Keys</div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        let score = 0;
+        let gameRunning = true;
+        const keys = {};
+
+        const player = {
+            x: canvas.width / 2 - 15,
+            y: canvas.height - 50,
+            size: 30,
+            color: '#00d4ff'
+        };
+
+        let cars = [];
+        let lanes = [];
+
+        function playSound(freq, duration) {
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
+                osc.frequency.value = freq;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+                osc.start(audioContext.currentTime);
+                osc.stop(audioContext.currentTime + duration);
+            } catch(e) {}
+        }
+
+        for (let i = 0; i < 8; i++) {
+            lanes.push({
+                y: canvas.height - 100 - (i * 60),
+                speed: 2 + Math.random() * 3,
+                direction: Math.random() > 0.5 ? 1 : -1,
+                carWidth: 50,
+                carHeight: 30
+            });
+        }
+
+        function spawnCars() {
+            lanes.forEach((lane, index) => {
+                if (Math.random() < 0.02) {
+                    cars.push({
+                        x: lane.direction > 0 ? -lane.carWidth : canvas.width,
+                        y: lane.y,
+                        width: lane.carWidth,
+                        height: lane.carHeight,
+                        speed: lane.speed * lane.direction,
+                        color: '#FF6B6B'
+                    });
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => { keys[e.key] = true; });
+        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+        function update() {
+            if (!gameRunning) return;
+
+            if (keys['ArrowUp']) player.y = Math.max(0, player.y - 8);
+            if (keys['ArrowDown']) player.y = Math.min(canvas.height - player.size, player.y + 8);
+            if (keys['ArrowLeft']) player.x = Math.max(0, player.x - 8);
+            if (keys['ArrowRight']) player.x = Math.min(canvas.width - player.size, player.x + 8);
+
+            spawnCars();
+
+            cars = cars.filter(car => {
+                car.x += car.speed;
+                
+                if (car.x > player.x - car.width && car.x < player.x + player.size &&
+                    car.y > player.y - car.height && car.y < player.y + player.size) {
+                    gameRunning = false;
+                    alert('Game Over! Score: ' + score);
+                }
+
+                return car.x > -car.width && car.x < canvas.width;
+            });
+
+            if (player.y < 100) {
+                score += 10;
+                player.y = canvas.height - 50;
+                playSound(1500, 0.3);
+            }
+
+            document.getElementById('score').textContent = score;
+        }
+
+        function draw() {
+            ctx.fillStyle = '#1a1a2e';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            lanes.forEach(lane => {
+                ctx.fillStyle = '#333';
+                ctx.fillRect(0, lane.y, canvas.width, lane.carHeight);
+            });
+
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.size, player.size);
+
+            ctx.fillStyle = '#FF0000';
+            cars.forEach(car => {
+                ctx.fillRect(car.x, car.y, car.width, car.height);
+            });
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
