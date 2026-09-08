@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Default stealth tab appearance -->
+    <title>Google Drive - My Drive</title>
+    <link rel="icon" type="image/x-icon" href="https://gstatic.com">
+    
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #0f0f12;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { margin-bottom: 5px; color: #4f46e5; }
+        p.subtitle { margin-top: 0; color: #a1a1aa; font-size: 14px; margin-bottom: 25px; }
+        
+        .search-container { width: 100%; max-width: 600px; margin-bottom: 30px; }
+        .search-bar {
+            width: 100%;
+            padding: 14px 20px;
+            font-size: 16px;
+            background-color: #1e1e24;
+            border: 2px solid #2e2e38;
+            border-radius: 30px;
+            color: white;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .search-bar:focus { border-color: #4f46e5; }
 
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+        .game-card {
+            background-color: #1e1e24;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.4);
+        }
+        .game-card img {
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            background-color: #2e2e38;
+        }
+        .game-card h3 {
+            margin: 10px 0;
+            font-size: 15px;
+            padding: 0 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Dashboard</h1>
+    <p class="subtitle">Select an application to launch</p>
+
+    <div class="search-container">
+        <input type="text" id="searchBar" class="search-bar" placeholder="Search available items..." onkeyup="filterGames()">
+    </div>
+
+    <div class="game-grid" id="gameGrid">
+        <!-- Game 1 Frame -->
+        <div class="game-card" onclick="launchGame('games/space-shooter/index.html')">
+            <img src="https://unsplash.com" alt="Space Shooter">
+            <h3>Space Shooter</h3>
+        </div>
+        
+        <!-- Game 2 Frame (Placeholder for you to change later) -->
+        <div class="game-card" onclick="launchGame('games/snake/index.html')">
+            <img src="https://unsplash.com" alt="Retro Snake">
+            <h3>Retro Snake</h3>
+        </div>
+    </div>
+
+    <script>
+        // 1. Tab Cloaker: Instantly changes tab details if you click away to another tab
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                document.title = "Google Classroom";
+                document.querySelector("link[rel*='icon']").href = "https://gstatic.com";
+            } else {
+                document.title = "Google Drive - My Drive";
+                document.querySelector("link[rel*='icon']").href = "https://gstatic.com";
+            }
+        });
+
+        // 2. Search Filter Logic
+        function filterGames() {
+            let input = document.getElementById('searchBar').value.toLowerCase();
+            let cards = document.getElementsByClassName('game-card');
+            
+            for (let i = 0; i < cards.length; i++) {
+                let title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
+                if (title.includes(input)) {
+                    cards[i].style.display = "";
+                } else {
+                    cards[i].style.display = "none";
+                }
+            }
+        }
+
+        // 3. Clean Launch Option (Opens game in a blank clean window frame)
+        function launchGame(path) {
+            let win = window.open();
+            win.document.body.style.margin = '0';
+            win.document.body.style.height = '100vh';
+            win.document.body.style.backgroundColor = '#000';
+            
+            let iframe = win.document.createElement('iframe');
+            iframe.style.border = 'none';
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            iframe.src = window.location.href + path;
+            
+            win.document.body.appendChild(iframe);
+        }
+    </script>
+</body>
+</html>
