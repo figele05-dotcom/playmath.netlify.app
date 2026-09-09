@@ -386,13 +386,14 @@
         .difficulty-btn.active { border-color:#00d4ff; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; box-shadow:0 0 14px #00d4ff66; }
         .setting-button.active { border-color:#22c55e; color:#bbf7d0; }
         .difficulty-help { color:#a1a1aa; font-size:.9em; margin:0 0 18px; }
+.music-status{margin:-28px 0 28px;color:#a5f3fc;font-weight:700;letter-spacing:.04em;text-shadow:0 0 14px #22d3ee88}
 </style>
 </head>
 <body>
 
     <!-- Menu Screen -->
     <div id="menuScreen">
-        <h2 class="menu-title">🎮 GAME HUB 🎮</h2>
+        <h2 class="menu-title">🎮 GAME HUB 🎮</h2><p class="music-status" id="musicStatus">♪ Lobby music starts when you press Start</p>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="startGame()">Start</button>
             <button class="menu-btn" onclick="showCredits()">Credits</button>
@@ -539,7 +540,7 @@
         });
 
         const musicState = { enabled: localStorage.getItem('playmathMusic') !== 'off' };
-        let audioContext = null, musicTimer = null, musicStep = 0;
+        let audioContext = null, musicTimer = null, musicStep = 0, musicStarting = false;
         const melody = [261.63,329.63,392.00,523.25,392.00,329.63,293.66,349.23,440.00,587.33,440.00,349.23,261.63,329.63,392.00,659.25];
         const bass = [130.81,130.81,146.83,146.83,164.81,164.81,146.83,146.83];
         function playTone(freq, duration, volume, type, when) {
@@ -550,13 +551,18 @@
             osc.start(when); osc.stop(when + duration + 0.03);
         }
         function startMusic() {
-            if (!musicState.enabled || musicTimer) return;
+            if (!musicState.enabled || musicTimer || musicStarting) return;
             const Audio = window.AudioContext || window.webkitAudioContext;
             if (!Audio) return;
             if (!audioContext) audioContext = new Audio();
-            if (audioContext.state === 'suspended') audioContext.resume();
-            const tick = () => { const now = audioContext.currentTime; playTone(melody[musicStep % melody.length], .19, .035, 'square', now); if (musicStep % 2 === 0) playTone(bass[(musicStep / 2) % bass.length], .34, .022, 'triangle', now); musicStep++; };
-            tick(); musicTimer = setInterval(tick, 260);
+            musicStarting = true;
+            const begin = () => {
+                musicStarting = false;
+                if (!musicState.enabled || musicTimer) return;
+                const tick = () => { const now = audioContext.currentTime; playTone(melody[musicStep % melody.length], .22, .06, 'square', now); if (musicStep % 2 === 0) playTone(bass[(musicStep / 2) % bass.length], .38, .035, 'triangle', now); musicStep++; };
+                tick(); musicTimer = setInterval(tick, 260);
+            };
+            (audioContext.state === 'suspended' ? audioContext.resume() : Promise.resolve()).then(begin).catch(() => { musicStarting = false; });
         }
         function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
         function toggleMusic() { musicState.enabled = !musicState.enabled; localStorage.setItem('playmathMusic', musicState.enabled ? 'on' : 'off'); if (musicState.enabled) startMusic(); else stopMusic(); updateMusicButton(); }

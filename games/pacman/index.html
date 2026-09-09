@@ -1,169 +1,26 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Maze Chase</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            width: 100%;
-            max-width: 500px;
-        }
-        #gameCanvas {
-            width: 100%;
-            height: 500px;
-            display: block;
-            border: 3px solid #00d4ff;
-        }
-        .ui {
-            background: #000;
-            padding: 15px;
-            text-align: center;
-            border-top: 3px solid #00d4ff;
-            color: #00d4ff;
-            font-family: Arial, sans-serif;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <canvas id="gameCanvas" width="500" height="500"></canvas>
-        <div class="ui">Score: <span id="score">0</span> | Arrow Keys to move</div>
-    </div>
-
-    <script>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maze Chase</title><style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -10%,#312e81,#050816 68%);color:#e0f2fe;font:15px system-ui,sans-serif;display:grid;place-items:center;padding:84px 16px 24px;overflow-x:hidden}.wrap{width:min(780px,100%);text-align:center}.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.top h1{margin:0;color:#facc15;font-size:clamp(1.35rem,4vw,2.2rem);text-shadow:0 0 20px #facc1599}.button{border:1px solid #38bdf8;background:#111827;color:#e0f2fe;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer;box-shadow:0 0 18px #0ea5e933}.button:hover{background:#1e3a8a;border-color:#67e8f9}.stats{display:flex;justify-content:center;gap:18px;flex-wrap:wrap;color:#c4b5fd;margin:8px 0 14px;font-weight:800}.stats b{color:#fef08a}.board{width:min(720px,100%);aspect-ratio:1;background:#020617;border:3px solid #4f46e5;border-radius:24px;box-shadow:0 0 0 1px #67e8f944,0 0 45px #4f46e577, inset 0 0 40px #1e1b4b;display:block;touch-action:none}.hint{color:#94a3b8;margin:12px 0 0}.badge{color:#67e8f9;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
+:root{color-scheme:dark}body{background:radial-gradient(circle at 50% -15%,#1e3a8a,#020617 70%)!important;position:relative;isolation:isolate}body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.25;background-image:linear-gradient(rgba(56,189,248,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.08) 1px,transparent 1px),radial-gradient(circle at 20% 20%,#8b5cf655,transparent 32%);background-size:34px 34px,34px 34px,100% 100%;animation:arcadeDrift 18s linear infinite}@keyframes arcadeDrift{to{background-position:68px 68px,-68px 0,0 0}}canvas{border-radius:20px!important;box-shadow:0 0 0 1px #67e8f955,0 0 42px #0ea5e955,inset 0 0 30px #0008!important}.arcade-toolbar{position:fixed;top:14px;left:50%;transform:translateX(-50%);width:min(900px,calc(100% - 24px));z-index:30;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border:1px solid #67e8f955;border-radius:15px;background:#020617cc;backdrop-filter:blur(16px);box-shadow:0 12px 36px #0008}.arcade-toolbar button{border:1px solid #38bdf8;background:#0f172a;color:#e0f2fe;border-radius:9px;padding:8px 11px;font-weight:800;cursor:pointer}.arcade-toolbar button:hover{background:#1e3a8a}.arcade-toolbar strong{color:#67e8f9;font-size:.78rem;letter-spacing:.12em}.arcade-toolbar span{color:#c4b5fd;font-size:.8rem}.arcade-toolbar b{color:#fef08a}</style></head><body><main class="wrap"><div class="top"><button class="button" onclick="exitGame()">← Exit Lobby</button><div><div class="badge">PlayMath Arcade</div><h1>🟡 Maze Chase</h1></div><button class="button" onclick="restart()">Restart</button></div><div class="stats"><span>Score: <b id="score">0</b></span><span>Lives: <b id="lives">3</b></span><span>Pellets: <b id="remaining">0</b></span><span>Difficulty: <b id="difficultyLabel">Normal</b></span></div><canvas id="gameCanvas" class="board" width="720" height="720"></canvas><p id="message" class="hint">Arrow keys / WASD to move · Eat every glowing pellet</p></main><script>
 const playmathDifficulty=(new URLSearchParams(location.search).get('difficulty')||localStorage.getItem('playmathDifficulty')||'normal').toLowerCase();
-const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        const gridSize = 25;
-        let score = 0;
-        const keys = {};
-
-        const player = {
-            x: 2,
-            y: 2,
-            color: '#FFD700'
-        };
-
-        let pellets = [];
-        let ghosts = [];
-
-        function playSound(freq, duration) {
-            try {
-                const osc = audioContext.createOscillator();
-                const gain = audioContext.createGain();
-                osc.connect(gain);
-                gain.connect(audioContext.destination);
-                osc.frequency.value = freq;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.1, audioContext.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
-                osc.start(audioContext.currentTime);
-                osc.stop(audioContext.currentTime + duration);
-            } catch(e) {}
-        }
-
-        const cols = Math.floor(canvas.width / gridSize);
-        const rows = Math.floor(canvas.height / gridSize);
-
-        for (let i = 0; i < cols; i++) {
-            for (let j = 0; j < rows; j++) {
-                if (Math.random() > 0.8) {
-                    pellets.push({x: i, y: j});
-                }
-            }
-        }
-
-        for (let i = 0; i < 3; i++) {
-            ghosts.push({
-                x: Math.floor(Math.random() * cols),
-                y: Math.floor(Math.random() * rows),
-                color: ['#FF0000', '#00FFFF', '#FFB6C1'][i]
-            });
-        }
-
-        document.addEventListener('keydown', (e) => { keys[e.key] = true; });
-        document.addEventListener('keyup', (e) => { keys[e.key] = false; });
-
-        let frameCount = 0;
-        function update() {
-            frameCount++;
-
-            if (frameCount % 5 === 0) {
-                if (keys['ArrowUp']) player.y = Math.max(0, player.y - 1);
-                if (keys['ArrowDown']) player.y = Math.min(rows - 1, player.y + 1);
-                if (keys['ArrowLeft']) player.x = Math.max(0, player.x - 1);
-                if (keys['ArrowRight']) player.x = Math.min(cols - 1, player.x + 1);
-            }
-
-            pellets = pellets.filter(p => !(p.x === player.x && p.y === player.y));
-            if (pellets.length < score / 10 + 5) {
-                pellets.push({x: Math.floor(Math.random() * cols), y: Math.floor(Math.random() * rows)});
-            }
-
-            ghosts.forEach(g => {
-                if (Math.random() > 0.7) {
-                    const dirs = [[0, -1], [0, 1], [-1, 0], [1, 0]];
-                    const dir = dirs[Math.floor(Math.random() * 4)];
-                    g.x = Math.max(0, Math.min(cols - 1, g.x + dir[0]));
-                    g.y = Math.max(0, Math.min(rows - 1, g.y + dir[1]));
-                }
-
-                if (g.x === player.x && g.y === player.y) {
-                    alert('Game Over! Score: ' + score);
-                }
-            });
-
-            for (let p of pellets) {
-                if (p.x === player.x && p.y === player.y) {
-                    score += 10;
-                    playSound(1200, 0.2);
-                }
-            }
-
-            document.getElementById('score').textContent = score;
-        }
-
-        function draw() {
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x * gridSize + 2, player.y * gridSize + 2, gridSize - 4, gridSize - 4);
-
-            ctx.fillStyle = '#FFB6C1';
-            pellets.forEach(p => {
-                ctx.beginPath();
-                ctx.arc(p.x * gridSize + gridSize / 2, p.y * gridSize + gridSize / 2, 3, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            ghosts.forEach(g => {
-                ctx.fillStyle = g.color;
-                ctx.fillRect(g.x * gridSize + 2, g.y * gridSize + 2, gridSize - 4, gridSize - 4);
-            });
-        }
-
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        gameLoop();
-    </script>
-</body>
-</html>
+const canvas=document.getElementById('gameCanvas'),ctx=canvas.getContext('2d'),cols=23,rows=23,tile=canvas.width/cols;
+const speedByDifficulty={easy:155,normal:120,hard:92,impossible:68};const ghostCountByDifficulty={easy:2,normal:3,hard:4,impossible:4};let stepMs=speedByDifficulty[playmathDifficulty]||120;
+let player,ghosts,pellets,score,lives,frightenedUntil=0,gameOver=false,won=false,lastStep=0,animation=0,nextDirection={x:0,y:0};
+const keys={};
+function exitGame(){location.href='../../index.html'}
+function isWall(x,y){if(x<0||y<0||x>=cols||y>=rows)return true;if(x===0||y===0||x===cols-1||y===rows-1)return true;if((y===4||y===18)&&x>2&&x<20&&x!==11)return true;if((y===8||y===14)&&x>1&&x<21&&!([5,6,11,16,17].includes(x)))return true;if((x===4||x===18)&&y>2&&y<20&&!([4,8,11,14,18].includes(y)))return true;if((x===8||x===14)&&y>3&&y<19&&!([6,11,16].includes(y)))return true;return false}
+function key(x,y){return x+','+y}function walkable(x,y){return !isWall(x,y)}
+function resetActors(){player={x:11,y:19,dir:{x:0,y:0}};const spots=[[21,1,'#fb2c36'],[1,21,'#22d3ee'],[21,21,'#f9a8d4'],[11,11,'#c084fc']];ghosts=spots.slice(0,ghostCountByDifficulty[playmathDifficulty]||3).map(s=>({x:s[0],y:s[1],homeX:s[0],homeY:s[1],dir:{x:0,y:0},color:s[2]}));nextDirection={x:0,y:0}}
+function createBoard(){pellets=new Map();const powers=[[1,1],[21,1],[1,21],[21,21]];for(let y=1;y<rows-1;y++)for(let x=1;x<cols-1;x++)if(walkable(x,y)&&!(x===11&&y===19))pellets.set(key(x,y),{power:powers.some(p=>p[0]===x&&p[1]===y)})}
+function restart(){score=0;lives=3;frightenedUntil=0;gameOver=false;won=false;createBoard();resetActors();document.getElementById('message').textContent='Arrow keys / WASD to move · Eat every glowing pellet';updateHud();draw()}
+function updateHud(){document.getElementById('score').textContent=score;document.getElementById('lives').textContent=lives;document.getElementById('remaining').textContent=pellets.size;document.getElementById('difficultyLabel').textContent=playmathDifficulty[0].toUpperCase()+playmathDifficulty.slice(1)}
+function canMove(entity,dir){return dir&&(dir.x!==0||dir.y!==0)&&walkable(entity.x+dir.x,entity.y+dir.y)}
+function eatPellet(){const k=key(player.x,player.y),pellet=pellets.get(k);if(!pellet)return;pellets.delete(k);score+=pellet.power?50:10;if(pellet.power)frightenedUntil=performance.now()+6500;beep(pellet.power?880:620,.07);if(pellets.size===0){won=true;gameOver=true;document.getElementById('message').textContent='Maze cleared! You win — press Restart to play again.'}}
+function moveGhost(g){const choices=[{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}].filter(d=>canMove(g,d));if(!choices.length)return;const reverse={x:-g.dir.x,y:-g.dir.y};const options=choices.filter(d=>!(d.x===reverse.x&&d.y===reverse.y));const usable=options.length?options:choices;const frightened=performance.now()<frightenedUntil;usable.sort((a,b)=>{const da=Math.abs(g.x+a.x-player.x)+Math.abs(g.y+a.y-player.y),db=Math.abs(g.x+b.x-player.x)+Math.abs(g.y+b.y-player.y);return frightened?db-da:da-db});g.dir=usable[Math.random()<.2?Math.floor(Math.random()*usable.length):0];g.x+=g.dir.x;g.y+=g.dir.y}
+function collide(){for(const g of ghosts)if(g.x===player.x&&g.y===player.y){if(performance.now()<frightenedUntil){score+=200;g.x=g.homeX;g.y=g.homeY;g.dir={x:0,y:0};beep(1200,.12)}else{lives--;beep(160,.35);if(lives<=0){gameOver=true;document.getElementById('message').textContent='Game over — press Restart to try again.'}else{player.x=11;player.y=19;player.dir={x:0,y:0};nextDirection={x:0,y:0}}}}}
+function step(){if(gameOver)return;if(canMove(player,nextDirection))player.dir=nextDirection;if(canMove(player,player.dir)){player.x+=player.dir.x;player.y+=player.dir.y}eatPellet();ghosts.forEach(moveGhost);collide();updateHud()}
+let audio=null;function beep(freq,duration){try{if(!audio)audio=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type='square';o.frequency.value=freq;o.connect(g);g.connect(audio.destination);g.gain.setValueAtTime(.045,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);o.start();o.stop(audio.currentTime+duration)}catch(e){}}
+addEventListener('keydown',e=>{const dirs={ArrowUp:{x:0,y:-1},w:{x:0,y:-1},ArrowDown:{x:0,y:1},s:{x:0,y:1},ArrowLeft:{x:-1,y:0},a:{x:-1,y:0},ArrowRight:{x:1,y:0},d:{x:1,y:0}};if(dirs[e.key]){e.preventDefault();nextDirection=dirs[e.key]}});let touchX=0,touchY=0;canvas.addEventListener('pointerdown',e=>{touchX=e.clientX;touchY=e.clientY});canvas.addEventListener('pointerup',e=>{const dx=e.clientX-touchX,dy=e.clientY-touchY;if(Math.max(Math.abs(dx),Math.abs(dy))<12)return;nextDirection=Math.abs(dx)>Math.abs(dy)?{x:Math.sign(dx),y:0}:{x:0,y:Math.sign(dy)}});
+function draw(){animation+=.08;const grd=ctx.createRadialGradient(360,300,30,360,360,520);grd.addColorStop(0,'#111827');grd.addColorStop(1,'#020617');ctx.fillStyle=grd;ctx.fillRect(0,0,canvas.width,canvas.height);ctx.shadowColor='#4f46e5';ctx.shadowBlur=18;for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)if(isWall(x,y)){ctx.fillStyle='#172554';ctx.fillRect(x*tile+2,y*tile+2,tile-4,tile-4);ctx.shadowBlur=0;ctx.strokeStyle='#38bdf866';ctx.strokeRect(x*tile+4,y*tile+4,tile-8,tile-8);ctx.shadowBlur=18}ctx.shadowBlur=0;pellets.forEach((p,k)=>{const [x,y]=k.split(',').map(Number),pulse=p.power?4+Math.sin(animation*2)*2:2.8;ctx.fillStyle=p.power?'#fef08a':'#fbcfe8';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=p.power?18:8;ctx.beginPath();ctx.arc(x*tile+tile/2,y*tile+tile/2,pulse,0,Math.PI*2);ctx.fill()});ctx.shadowBlur=0;const px=player.x*tile+tile/2,py=player.y*tile+tile/2,angle=Math.atan2(player.dir.y,player.dir.x)||0,mouth=.25+Math.abs(Math.sin(animation))*.18;ctx.fillStyle='#facc15';ctx.shadowColor='#facc15';ctx.shadowBlur=20;ctx.beginPath();ctx.moveTo(px,py);ctx.arc(px,py,tile*.38,angle+mouth,angle+Math.PI*2-mouth);ctx.closePath();ctx.fill();ctx.shadowBlur=0;ghosts.forEach(g=>{const gx=g.x*tile+tile/2,gy=g.y*tile+tile/2,scared=performance.now()<frightenedUntil;ctx.fillStyle=scared?'#2563eb':g.color;ctx.beginPath();ctx.arc(gx,gy-2,tile*.34,Math.PI,0);ctx.lineTo(gx+tile*.34,gy+tile*.32);ctx.lineTo(gx+tile*.17,gy+tile*.18);ctx.lineTo(gx,gy+tile*.32);ctx.lineTo(gx-tile*.17,gy+tile*.18);ctx.lineTo(gx-tile*.34,gy+tile*.32);ctx.closePath();ctx.fill();if(!scared){ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(gx-6,gy-4,5,0,Math.PI*2);ctx.arc(gx+6,gy-4,5,0,Math.PI*2);ctx.fill();ctx.fillStyle='#111827';ctx.beginPath();ctx.arc(gx-5+g.dir.x*2,gy-4+g.dir.y*2,2.5,0,Math.PI*2);ctx.arc(gx+7+g.dir.x*2,gy-4+g.dir.y*2,2.5,0,Math.PI*2);ctx.fill()}});if(gameOver){ctx.fillStyle='#020617cc';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle=won?'#facc15':'#fda4af';ctx.textAlign='center';ctx.font='800 42px system-ui';ctx.fillText(won?'MAZE CLEARED':'GAME OVER',canvas.width/2,canvas.height/2-10);ctx.font='18px system-ui';ctx.fillStyle='#e0f2fe';ctx.fillText('Press Restart to play again',canvas.width/2,canvas.height/2+30)}}
+function loop(now){if(now-lastStep>stepMs){step();lastStep=now}draw();requestAnimationFrame(loop)}restart();requestAnimationFrame(loop);
+</script></body></html>
