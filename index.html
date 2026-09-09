@@ -380,7 +380,13 @@
             transform: scale(1.05);
             box-shadow: 0 0 25px rgba(79, 70, 229, 1);
         }
-    </style>
+    
+        .difficulty-options { display:flex; flex-wrap:wrap; gap:10px; margin:12px 0 22px; }
+        .difficulty-btn, .setting-button { padding:10px 15px; border:2px solid #475569; border-radius:9px; background:#111827; color:#cbd5e1; cursor:pointer; font-weight:700; }
+        .difficulty-btn.active { border-color:#00d4ff; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:#fff; box-shadow:0 0 14px #00d4ff66; }
+        .setting-button.active { border-color:#22c55e; color:#bbf7d0; }
+        .difficulty-help { color:#a1a1aa; font-size:.9em; margin:0 0 18px; }
+</style>
 </head>
 <body>
 
@@ -411,27 +417,17 @@
     <div id="settingsScreen">
         <div class="settings-container">
             <h2>Settings</h2>
-            
-            <div class="setting-item">
-                <span class="setting-label">Sound Effects</span>
-                <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
+            <div class="setting-item"><span class="setting-label">Music</span><button id="musicToggle" class="setting-button active" onclick="toggleMusic()">On</button></div>
+            <div class="setting-item"><span class="setting-label">Sound Effects</span><button class="setting-button active" onclick="this.classList.toggle('active'); this.textContent=this.classList.contains('active')?'On':'Off';">On</button></div>
+            <div class="setting-item"><span class="setting-label">Full Screen</span><button class="setting-button" onclick="toggleFullscreen()">Open</button></div>
+            <p class="setting-label" style="margin:22px 0 8px;">Difficulty</p>
+            <div class="difficulty-options">
+                <button class="difficulty-btn" data-difficulty="easy" onclick="setDifficulty('easy')">Easy</button>
+                <button class="difficulty-btn" data-difficulty="normal" onclick="setDifficulty('normal')">Normal</button>
+                <button class="difficulty-btn" data-difficulty="hard" onclick="setDifficulty('hard')">Hard</button>
+                <button class="difficulty-btn" data-difficulty="impossible" onclick="setDifficulty('impossible')">Impossible</button>
             </div>
-
-            <div class="setting-item">
-                <span class="setting-label">Music</span>
-                <div class="toggle-switch active" onclick="toggleSetting(this)"></div>
-            </div>
-
-            <div class="setting-item">
-                <span class="setting-label">Full Screen</span>
-                <div class="toggle-switch" onclick="toggleSetting(this)"></div>
-            </div>
-
-            <div class="setting-item">
-                <span class="setting-label">Difficulty: Hard</span>
-                <div style="color: #00d4ff;">⚡</div>
-            </div>
-
+            <p id="difficultyHelp" class="difficulty-help">Normal pace and challenge.</p>
             <button class="close-settings" onclick="closeSettings()">Back to Menu</button>
         </div>
     </div>
@@ -538,82 +534,49 @@
     </div>
 
     <script>
-        // Tab Cloaker
         document.addEventListener('visibilitychange', function() {
-            if (document.hidden) {
-                document.title = "Google Classroom";
-            } else {
-                document.title = "Google Drive - My Drive";
-            }
+            document.title = document.hidden ? 'Google Classroom' : 'Google Drive - My Drive';
         });
 
-        // Menu Navigation
-        function startGame() {
-            document.getElementById('menuScreen').classList.add('hidden');
-            document.getElementById('gameScreen').classList.add('active');
+        const musicState = { enabled: localStorage.getItem('playmathMusic') !== 'off' };
+        let audioContext = null, musicTimer = null, musicStep = 0;
+        const melody = [261.63,329.63,392.00,523.25,392.00,329.63,293.66,349.23,440.00,587.33,440.00,349.23,261.63,329.63,392.00,659.25];
+        const bass = [130.81,130.81,146.83,146.83,164.81,164.81,146.83,146.83];
+        function playTone(freq, duration, volume, type, when) {
+            if (!audioContext) return;
+            const osc = audioContext.createOscillator(), gain = audioContext.createGain();
+            osc.type = type || 'square'; osc.frequency.value = freq; osc.connect(gain); gain.connect(audioContext.destination);
+            gain.gain.setValueAtTime(0.0001, when); gain.gain.exponentialRampToValueAtTime(volume, when + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+            osc.start(when); osc.stop(when + duration + 0.03);
         }
+        function startMusic() {
+            if (!musicState.enabled || musicTimer) return;
+            const Audio = window.AudioContext || window.webkitAudioContext;
+            if (!Audio) return;
+            if (!audioContext) audioContext = new Audio();
+            if (audioContext.state === 'suspended') audioContext.resume();
+            const tick = () => { const now = audioContext.currentTime; playTone(melody[musicStep % melody.length], .19, .035, 'square', now); if (musicStep % 2 === 0) playTone(bass[(musicStep / 2) % bass.length], .34, .022, 'triangle', now); musicStep++; };
+            tick(); musicTimer = setInterval(tick, 260);
+        }
+        function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
+        function toggleMusic() { musicState.enabled = !musicState.enabled; localStorage.setItem('playmathMusic', musicState.enabled ? 'on' : 'off'); if (musicState.enabled) startMusic(); else stopMusic(); updateMusicButton(); }
+        function updateMusicButton() { const b = document.getElementById('musicToggle'); if (b) { b.textContent = musicState.enabled ? 'On' : 'Off'; b.classList.toggle('active', musicState.enabled); } }
+        const difficultyInfo = { easy:'Relaxed speed and forgiving gameplay.', normal:'Normal pace and challenge.', hard:'Faster action with less room for mistakes.', impossible:'Maximum speed. Good luck.' };
+        function currentDifficulty() { return localStorage.getItem('playmathDifficulty') || 'normal'; }
+        function setDifficulty(level) { localStorage.setItem('playmathDifficulty', level); renderDifficulty(); }
+        function renderDifficulty() { const level = currentDifficulty(); document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.toggle('active', b.dataset.difficulty === level)); const help = document.getElementById('difficultyHelp'); if (help) help.textContent = difficultyInfo[level]; updateMusicButton(); }
+        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
 
-        function backToMenu() {
-            document.getElementById('gameScreen').classList.remove('active');
-            document.getElementById('menuScreen').classList.remove('hidden');
-            document.getElementById('settingsScreen').classList.remove('active');
-            document.getElementById('creditsScreen').classList.remove('active');
-        }
-
-        function showCredits() {
-            document.getElementById('menuScreen').classList.add('hidden');
-            document.getElementById('creditsScreen').classList.add('active');
-        }
-
-        function closeCredits() {
-            document.getElementById('creditsScreen').classList.remove('active');
-            document.getElementById('menuScreen').classList.remove('hidden');
-        }
-
-        function showSettings() {
-            document.getElementById('menuScreen').classList.add('hidden');
-            document.getElementById('settingsScreen').classList.add('active');
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsScreen').classList.remove('active');
-            document.getElementById('menuScreen').classList.remove('hidden');
-        }
-
-        function toggleSetting(element) {
-            element.classList.toggle('active');
-        }
-
-        // Search Filter Logic
-        function filterGames() {
-            let input = document.getElementById('searchBar').value.toLowerCase();
-            let cards = document.getElementsByClassName('game-card');
-            
-            for (let i = 0; i < cards.length; i++) {
-                let title = cards[i].getElementsByTagName('h3')[0].innerText.toLowerCase();
-                if (title.includes(input)) {
-                    cards[i].style.display = "";
-                } else {
-                    cards[i].style.display = "none";
-                }
-            }
-        }
-
-        // Launch Game in iframe
-        function launchGame(path) {
-            let win = window.open();
-            win.document.body.style.margin = '0';
-            win.document.body.style.height = '100vh';
-            win.document.body.style.backgroundColor = '#000';
-            
-            let iframe = win.document.createElement('iframe');
-            iframe.style.border = 'none';
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.src = window.location.href.replace(/\/$/, '') + '/' + path;
-            
-            win.document.body.appendChild(iframe);
-        }
+        function startGame() { startMusic(); document.getElementById('menuScreen').classList.add('hidden'); document.getElementById('gameScreen').classList.add('active'); }
+        function backToMenu() { document.getElementById('gameScreen').classList.remove('active'); document.getElementById('menuScreen').classList.remove('hidden'); document.getElementById('settingsScreen').classList.remove('active'); document.getElementById('creditsScreen').classList.remove('active'); }
+        function showCredits() { document.getElementById('menuScreen').classList.add('hidden'); document.getElementById('creditsScreen').classList.add('active'); }
+        function closeCredits() { document.getElementById('creditsScreen').classList.remove('active'); document.getElementById('menuScreen').classList.remove('hidden'); }
+        function showSettings() { document.getElementById('menuScreen').classList.add('hidden'); document.getElementById('settingsScreen').classList.add('active'); renderDifficulty(); }
+        function closeSettings() { document.getElementById('settingsScreen').classList.remove('active'); document.getElementById('menuScreen').classList.remove('hidden'); }
+        function filterGames() { const input=document.getElementById('searchBar').value.toLowerCase(); document.querySelectorAll('.game-card').forEach(card => { card.style.display=card.querySelector('h3').innerText.toLowerCase().includes(input) ? '' : 'none'; }); }
+        function launchGame(path) { window.location.href = path + '?difficulty=' + encodeURIComponent(currentDifficulty()); }
+        document.addEventListener('pointerdown', () => { if (musicState.enabled) startMusic(); }, { once:true });
+        renderDifficulty();
     </script>
 </body>
 </html>

@@ -59,7 +59,8 @@
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
+const playmathDifficulty=(new URLSearchParams(location.search).get('difficulty')||localStorage.getItem('playmathDifficulty')||'normal').toLowerCase();
+const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
