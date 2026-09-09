@@ -567,6 +567,33 @@
         let audioContext = null, musicTimer = null, musicStep = 0, musicStarting = false;
         const melody = [261.63,329.63,392.00,523.25,392.00,329.63,293.66,349.23,440.00,587.33,440.00,349.23,261.63,329.63,392.00,659.25];
         const bass = [130.81,130.81,146.83,146.83,164.81,164.81,146.83,146.83];
+        const difficultySettings = {
+            easy: { label: 'Easy', help: 'Slower pace and fewer hazards.' },
+            normal: { label: 'Normal', help: 'Normal pace and challenge.' },
+            hard: { label: 'Hard', help: 'Faster pace and more hazards.' },
+            impossible: { label: 'Impossible', help: 'Maximum speed and challenge.' }
+        };
+        function currentDifficulty() {
+            const saved = (localStorage.getItem('playmathDifficulty') || 'normal').toLowerCase();
+            return difficultySettings[saved] ? saved : 'normal';
+        }
+        function setDifficulty(value) {
+            const difficulty = String(value || '').toLowerCase();
+            if (!difficultySettings[difficulty]) return;
+            localStorage.setItem('playmathDifficulty', difficulty);
+            renderDifficulty();
+        }
+        function renderDifficulty() {
+            const difficulty = currentDifficulty();
+            document.querySelectorAll('.difficulty-btn').forEach(button => {
+                const active = button.dataset.difficulty === difficulty;
+                button.classList.toggle('active', active);
+                button.setAttribute('aria-pressed', String(active));
+            });
+            const help = document.getElementById('difficultyHelp');
+            if (help) help.textContent = difficultySettings[difficulty].help;
+        }
+
         function playTone(freq, duration, volume, type, when) {
             if (!audioContext) return;
             const osc = audioContext.createOscillator(), gain = audioContext.createGain();
@@ -574,6 +601,38 @@
             gain.gain.setValueAtTime(0.0001, when); gain.gain.exponentialRampToValueAtTime(volume, when + 0.02); gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
             osc.start(when); osc.stop(when + duration + 0.03);
         }
+        async function verifyAdmin() {
+            const input = document.getElementById('adminPassword');
+            const status = document.getElementById('adminStatus');
+            const panel = document.getElementById('adminPanel');
+            const password = input ? input.value : '';
+            if (!password) {
+                if (status) status.textContent = 'Enter the admin password first.';
+                return;
+            }
+            if (status) status.textContent = 'Verifying...';
+            try {
+                const response = await fetch('/.netlify/functions/verify-admin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.ok) {
+                    sessionStorage.removeItem('playmathAdmin');
+                    if (panel) panel.classList.remove('active');
+                    if (status) status.textContent = data.message || 'Admin verification failed.';
+                    return;
+                }
+                sessionStorage.setItem('playmathAdmin', '1');
+                if (panel) panel.classList.add('active');
+                if (status) status.textContent = 'Admin mode unlocked for this session.';
+                if (input) input.value = '';
+            } catch (error) {
+                if (status) status.textContent = 'Could not reach the admin verifier.';
+            }
+        }
+
         function startMusic() {
             if (!musicState.enabled || musicTimer || musicStarting) return;
             const Audio = window.AudioContext || window.webkitAudioContext;
