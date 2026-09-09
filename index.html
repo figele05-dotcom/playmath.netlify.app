@@ -387,6 +387,7 @@
         .setting-button.active { border-color:#22c55e; color:#bbf7d0; }
         .difficulty-help { color:#a1a1aa; font-size:.9em; margin:0 0 18px; }
 .music-status{margin:-28px 0 28px;color:#a5f3fc;font-weight:700;letter-spacing:.04em;text-shadow:0 0 14px #22d3ee88}
+.admin-area{margin:22px 0 18px;padding:16px;border:1px solid #7c3aed88;border-radius:14px;background:#11182799;text-align:left}.admin-area h3{margin:0 0 6px;color:#c4b5fd}.admin-area p{margin:4px 0 12px;color:#94a3b8;font-size:.85em}.admin-row{display:flex;gap:8px;flex-wrap:wrap}.admin-input{flex:1;min-width:180px;padding:11px;border-radius:9px;border:1px solid #475569;background:#020617;color:#fff}.admin-button{padding:11px 14px;border:1px solid #a78bfa;border-radius:9px;background:#312e81;color:#fff;font-weight:700;cursor:pointer}.admin-panel{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#052e16;border:1px solid #22c55e88}.admin-panel.active{display:block}.admin-status{display:block;min-height:20px;margin-top:8px;color:#fcd34d;font-size:.85em}.pseudo-fullscreen{position:fixed!important;inset:0!important;z-index:99999!important;overflow:auto!important;background:#020617!important;padding:20px!important}.game-admin-menu{font-size:.82em;color:#bbf7d0;margin:8px 0 0}.game-admin-menu button{margin:4px 4px 0 0}.
 </style>
 </head>
 <body>
@@ -395,7 +396,7 @@
     <div id="menuScreen">
         <h2 class="menu-title">🎮 GAME HUB 🎮</h2><p class="music-status" id="musicStatus">♪ Lobby music starts when you press Start</p>
         <div class="menu-buttons">
-            <button class="menu-btn" onclick="startGame()">Start</button>
+            <button class="menu-btn" onclick="startGame()">Start</button><button id="menuMusicButton" class="menu-btn" onclick="toggleMusic()">♫ Music: On</button>
             <button class="menu-btn" onclick="showCredits()">Credits</button>
             <button class="menu-btn" onclick="showSettings()">Settings</button>
         </div>
@@ -420,7 +421,7 @@
             <h2>Settings</h2>
             <div class="setting-item"><span class="setting-label">Music</span><button id="musicToggle" class="setting-button active" onclick="toggleMusic()">On</button></div>
             <div class="setting-item"><span class="setting-label">Sound Effects</span><button class="setting-button active" onclick="this.classList.toggle('active'); this.textContent=this.classList.contains('active')?'On':'Off';">On</button></div>
-            <div class="setting-item"><span class="setting-label">Full Screen</span><button class="setting-button" onclick="toggleFullscreen()">Open</button></div>
+            <div class="setting-item"><span class="setting-label">Full Screen</span><button id="fullscreenToggle" class="setting-button" onclick="toggleFullscreen()">Enter</button></div>
             <p class="setting-label" style="margin:22px 0 8px;">Difficulty</p>
             <div class="difficulty-options">
                 <button class="difficulty-btn" data-difficulty="easy" onclick="setDifficulty('easy')">Easy</button>
@@ -429,7 +430,7 @@
                 <button class="difficulty-btn" data-difficulty="impossible" onclick="setDifficulty('impossible')">Impossible</button>
             </div>
             <p id="difficultyHelp" class="difficulty-help">Normal pace and challenge.</p>
-            <button class="close-settings" onclick="closeSettings()">Back to Menu</button>
+            <div class="admin-area"><h3>🔐 Admin Access</h3><p>Admin tools are verified by the server and only affect game sessions. The password is never stored in this public page.</p><div class="admin-row"><input id="adminPassword" class="admin-input" type="password" autocomplete="current-password" placeholder="Password:"><button class="admin-button" onclick="verifyAdmin()">Unlock</button></div><span id="adminStatus" class="admin-status"></span><div id="adminPanel" class="admin-panel"><strong>Admin mode unlocked for this session.</strong><div class="game-admin-menu">Open a game to use Power Mode and bonus-score commands.</div></div></div><button class="close-settings" onclick="closeSettings()">Back to Menu</button>
         </div>
     </div>
 
@@ -566,12 +567,8 @@
         }
         function stopMusic() { clearInterval(musicTimer); musicTimer = null; }
         function toggleMusic() { musicState.enabled = !musicState.enabled; localStorage.setItem('playmathMusic', musicState.enabled ? 'on' : 'off'); if (musicState.enabled) startMusic(); else stopMusic(); updateMusicButton(); }
-        function updateMusicButton() { const b = document.getElementById('musicToggle'); if (b) { b.textContent = musicState.enabled ? 'On' : 'Off'; b.classList.toggle('active', musicState.enabled); } }
-        const difficultyInfo = { easy:'Relaxed speed and forgiving gameplay.', normal:'Normal pace and challenge.', hard:'Faster action with less room for mistakes.', impossible:'Maximum speed. Good luck.' };
-        function currentDifficulty() { return localStorage.getItem('playmathDifficulty') || 'normal'; }
-        function setDifficulty(level) { localStorage.setItem('playmathDifficulty', level); renderDifficulty(); }
-        function renderDifficulty() { const level = currentDifficulty(); document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.toggle('active', b.dataset.difficulty === level)); const help = document.getElementById('difficultyHelp'); if (help) help.textContent = difficultyInfo[level]; updateMusicButton(); }
-        function toggleFullscreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); }
+        function updateMusicButton() { const b=document.getElementById('musicToggle'); if(b){b.textContent=musicState.enabled?'On':'Off';b.classList.toggle('active',musicState.enabled);} const menu=document.getElementById('menuMusicButton'); if(menu) menu.textContent=musicState.enabled?'♫ Music: On':'♫ Music: Off'; const status=document.getElementById('musicStatus'); if(status) status.textContent=musicState.enabled?'♪ Lobby music is ready — press Start to play':'♪ Lobby music is off';
+        }
 
         function startGame() { startMusic(); document.getElementById('menuScreen').classList.add('hidden'); document.getElementById('gameScreen').classList.add('active'); }
         function backToMenu() { document.getElementById('gameScreen').classList.remove('active'); document.getElementById('menuScreen').classList.remove('hidden'); document.getElementById('settingsScreen').classList.remove('active'); document.getElementById('creditsScreen').classList.remove('active'); }
