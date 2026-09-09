@@ -388,13 +388,36 @@
         .difficulty-help { color:#a1a1aa; font-size:.9em; margin:0 0 18px; }
 .music-status{margin:-28px 0 28px;color:#a5f3fc;font-weight:700;letter-spacing:.04em;text-shadow:0 0 14px #22d3ee88}
 .admin-area{margin:22px 0 18px;padding:16px;border:1px solid #7c3aed88;border-radius:14px;background:#11182799;text-align:left}.admin-area h3{margin:0 0 6px;color:#c4b5fd}.admin-area p{margin:4px 0 12px;color:#94a3b8;font-size:.85em}.admin-row{display:flex;gap:8px;flex-wrap:wrap}.admin-input{flex:1;min-width:180px;padding:11px;border-radius:9px;border:1px solid #475569;background:#020617;color:#fff}.admin-button{padding:11px 14px;border:1px solid #a78bfa;border-radius:9px;background:#312e81;color:#fff;font-weight:700;cursor:pointer}.admin-panel{display:none;margin-top:12px;padding:12px;border-radius:10px;background:#052e16;border:1px solid #22c55e88}.admin-panel.active{display:block}.admin-status{display:block;min-height:20px;margin-top:8px;color:#fcd34d;font-size:.85em}.pseudo-fullscreen{position:fixed!important;inset:0!important;z-index:99999!important;overflow:auto!important;background:#020617!important;padding:20px!important}.game-admin-menu{font-size:.82em;color:#bbf7d0;margin:8px 0 0}.game-admin-menu button{margin:4px 4px 0 0}.
+
+        /* PLAYMATH NEXUS — anime arcade visual system */
+        body{background:#050516!important;color:#eef2ff!important;font-family:Inter,ui-sans-serif,system-ui,sans-serif!important;overflow-x:hidden}
+        body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:linear-gradient(115deg,transparent 0 42%,#ec489911 42.2% 42.5%,transparent 42.7%),linear-gradient(25deg,transparent 0 62%,#22d3ee0d 62.2% 62.5%,transparent 62.7%),radial-gradient(circle at 12% 18%,#7c3aed55,transparent 28%),radial-gradient(circle at 88% 78%,#ec489944,transparent 30%);mix-blend-mode:screen}
+        body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2;opacity:.11;background-image:linear-gradient(#fff 1px,transparent 1px);background-size:100% 5px;mix-blend-mode:overlay}
+        #menuScreen{background:radial-gradient(circle at 50% 25%,#312e81 0%,#12102d 32%,#050516 78%)!important;overflow:hidden;z-index:1000}
+        #menuScreen::before{content:"";position:absolute;width:75vw;height:75vw;max-width:900px;max-height:900px;border:1px solid #22d3ee33;border-radius:50%;box-shadow:0 0 0 70px #22d3ee08,0 0 0 140px #ec489908,0 0 90px #22d3ee22;animation:nexusPulse 7s ease-in-out infinite;pointer-events:none}
+        #menuScreen::after{content:"✦  ✧  ✦  ✧  ✦";position:absolute;top:13%;right:8%;color:#f0abfc99;letter-spacing:1.6em;font-size:1.5rem;transform:rotate(-12deg);animation:starFloat 5s ease-in-out infinite;pointer-events:none}
+        .brand-kicker{position:relative;z-index:1;color:#67e8f9;font-size:.78rem;font-weight:900;letter-spacing:.42em;margin-bottom:18px;text-shadow:0 0 18px #22d3ee}
+        .menu-title{position:relative;z-index:1;display:flex;align-items:baseline;gap:16px;margin:0 0 18px!important;font-size:clamp(4.2rem,13vw,9.5rem)!important;line-height:.82!important;letter-spacing:-.08em;color:#f8fafc!important;text-shadow:5px 5px 0 #7c3aed,0 0 28px #22d3eeaa!important;animation:none!important}
+        .menu-title strong{font-weight:1000;color:#fb7185;font-style:italic;text-shadow:5px 5px 0 #be185d,0 0 28px #ec4894aa}
+        .hero-status{position:relative;z-index:1;display:flex;align-items:center;gap:10px;color:#c4b5fd;font-size:.75rem;letter-spacing:.16em;font-weight:900;margin-bottom:26px}.hero-status i{width:9px;height:9px;background:#4ade80;border-radius:50%;box-shadow:0 0 14px #4ade80;animation:statusBlink 1.4s ease-in-out infinite}.hero-status em{color:#67e8f9;font-style:normal;margin-left:8px}
+        .music-status{position:relative;z-index:1;color:#f0abfc!important;text-shadow:0 0 16px #d946ef!important;margin:-10px 0 25px!important}
+        .menu-buttons{position:relative;z-index:1;display:grid!important;grid-template-columns:repeat(2,minmax(170px,1fr));gap:13px!important;width:min(440px,90vw)}
+        .menu-btn{padding:16px 22px!important;font-size:.92rem!important;letter-spacing:.16em!important;border:1px solid #67e8f9!important;border-radius:13px!important;background:linear-gradient(135deg,#312e81dd,#701a75dd)!important;box-shadow:0 0 18px #22d3ee33, inset 0 0 18px #ffffff0d!important;backdrop-filter:blur(10px);text-transform:uppercase;transition:transform .2s,box-shadow .2s,background .2s!important}.menu-btn:first-child{grid-column:1/-1;background:linear-gradient(100deg,#0891b2,#7c3aed 55%,#db2777)!important;border-color:#f0abfc!important}.menu-btn:hover{transform:translateY(-4px) scale(1.02)!important;box-shadow:0 12px 30px #22d3ee55,0 0 25px #ec489455!important}
+        #gameScreen{position:relative;z-index:3;background:radial-gradient(circle at 50% 0,#1e1b4b,#050516 60%)!important;justify-content:flex-start!important;min-height:100vh;padding:28px clamp(14px,4vw,48px)!important}
+        #gameScreen .header{max-width:1400px;padding:14px 18px;border:1px solid #67e8f955;border-radius:18px;background:#0b1028bb;backdrop-filter:blur(14px);box-shadow:0 12px 35px #0008}.header h1{font-size:clamp(1.45rem,4vw,2.5rem)!important;color:#f0abfc!important;text-shadow:0 0 20px #d946ef!important}
+        #gameScreen .subtitle{color:#a5b4fc!important;letter-spacing:.04em}
+        .search-container{width:min(560px,100%)!important}.search-bar{width:100%!important;background:#090b20!important;border:1px solid #7c3aed!important;border-radius:13px!important;color:#fff!important;padding:14px 18px!important;box-shadow:0 0 20px #7c3aed22}
+        .game-grid{position:relative;z-index:1;grid-template-columns:repeat(auto-fit,minmax(235px,1fr))!important;gap:18px!important;max-width:1400px!important;width:100%!important}
+        .game-card{overflow:hidden;background:linear-gradient(155deg,#11152ddd,#17113bdd)!important;border:1px solid #6366f188!important;border-radius:19px!important;box-shadow:0 16px 35px #0008, inset 0 1px #ffffff12!important;transition:transform .22s,box-shadow .22s,border-color .22s!important}.game-card::after{content:"PLAY NOW  ↗";position:absolute;right:14px;bottom:12px;color:#67e8f9;font-size:.65rem;font-weight:900;letter-spacing:.12em;opacity:0;transform:translateY(4px);transition:.22s}.game-card:hover{transform:translateY(-8px) rotateX(2deg);border-color:#22d3ee!important;box-shadow:0 22px 45px #000b,0 0 28px #22d3ee33!important}.game-card:hover::after{opacity:1;transform:none}.game-card img{height:158px!important;object-fit:cover;border-bottom:1px solid #67e8f955;filter:saturate(1.18) contrast(1.05);transition:transform .3s,filter .3s}.game-card:hover img{transform:scale(1.06);filter:saturate(1.45) contrast(1.1)}.game-card h3{color:#f5d0fe!important;font-size:1.05rem!important;letter-spacing:.02em}.game-card p{color:#a5b4fc!important}
+        @keyframes nexusPulse{50%{transform:scale(1.04);opacity:.7}}@keyframes starFloat{50%{transform:rotate(-12deg) translateY(14px)}}@keyframes statusBlink{50%{opacity:.3;transform:scale(.75)}}
+        @media(max-width:560px){.menu-buttons{grid-template-columns:1fr!important}.menu-btn:first-child{grid-column:auto}.hero-status{font-size:.62rem}.hero-status em{display:none}.menu-title{font-size:clamp(3.5rem,19vw,6rem)!important}}
 </style>
 </head>
 <body>
 
     <!-- Menu Screen -->
     <div id="menuScreen">
-        <h2 class="menu-title">🎮 GAME HUB 🎮</h2><p class="music-status" id="musicStatus">♪ Lobby music starts when you press Start</p>
+        <div class="brand-kicker">PLAYMATH // NEXUS</div><h2 class="menu-title"><span>GAME</span><strong>HUB</strong></h2><div class="hero-status"><i></i> ARCADE ONLINE <em>12 CUSTOM GAMES</em></div><p class="music-status" id="musicStatus">♪ Lobby music starts when you press Start</p>
         <div class="menu-buttons">
             <button class="menu-btn" onclick="startGame()">Start</button><button id="menuMusicButton" class="menu-btn" onclick="toggleMusic()">♫ Music: On</button>
             <button class="menu-btn" onclick="showCredits()">Credits</button>
@@ -442,7 +465,7 @@
             <div style="width: 80px;"></div>
         </div>
 
-        <p class="subtitle">Select a game to play</p>
+        <p class="subtitle">Choose your next run · sharpen your skills · own the leaderboard</p>
 
         <div class="search-container">
             <input type="text" id="searchBar" class="search-bar" placeholder="Search games..." onkeyup="filterGames()">
